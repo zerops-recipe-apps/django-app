@@ -36,6 +36,11 @@ zerops:
         - recipe/
         - manage.py
         - gunicorn.conf.py
+    deploy: 
+      readinessCheck: 
+        httpGet: 
+          port: 8000
+          path: /health
     run:
       os: alpine
       base: python@3.12
@@ -49,6 +54,10 @@ zerops:
         # Exec just once.
         - zsc execOnce createsuperuser -- python manage.py createsuperuser --no-input --username admin --email admin@example.com || true
       start: gunicorn recipe.wsgi
+      healthCheck:
+        httpGet: 
+          port: 8000
+          path: /health
 
   - setup: dev
     extends: base

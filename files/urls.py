@@ -7,4 +7,5 @@ urlpatterns = [
     path("", views.index, name="index"),
     path("detail/<int:file_id>", views.detail, name="detail"),
     path("upload", views.upload, name="upload"),
+    path("health", views.health, name="health"),
 ]
