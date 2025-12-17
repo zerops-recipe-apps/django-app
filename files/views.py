@@ -1,6 +1,7 @@
 import logging
 
 from django.core.mail import send_mail
+from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
@@ -11,12 +12,16 @@ logger = logging.getLogger(__name__)
 
 
 def index(request):
-    latest_files_list = File.objects.order_by("-uploaded_at")[:5]
+    files_list = File.objects.order_by("-uploaded_at")
+    paginator = Paginator(files_list, 3)  # 3 files per page
 
-    logger.info(f"serving last {len(latest_files_list)} files")
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    logger.info(f"serving page {page_obj.number} with {len(page_obj)} files")
 
     context = {
-        "latest_files_list": latest_files_list,
+        "page_obj": page_obj,
     }
 
     return render(request, "files/index.html", context)

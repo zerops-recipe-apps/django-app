@@ -7,7 +7,7 @@
 <h1>Zerops <span class="secondary-text">File Uploader</span></h1>
 <p class="header-content">Django is a high-level Python web framework that encourages rapid development and clean, pragmatic design. This recipe aims to showcase few advanced Django concepts and how to integrate them with Zerops, all through a simple file upload demo application.</p>
 <p class="header-content">Feel free to join our <a href="https://discord.gg/xxzmJSDKPT" target="_blank">Discord server</a> - Checkout our  <a href="https://docs.zerops.io" target="_blank">Docs</a></p>
-{% comment %} Add Docs and Discord Server Button {% endcomment %}
+
 <div class="form-container">
 <form action="{% url 'files:upload' %}" method="post" enctype="multipart/form-data">
     {% csrf_token %}
@@ -16,10 +16,10 @@
 </form>
 </div>
 
-{% if latest_files_list %}
+{% if page_obj %}
     <div class="imgcontent">
         <div class="image-section">
-            {% for file in latest_files_list %}
+            {% for file in page_obj %}
             <div class="images">
             <img src="{{ file.file.url }}" alt="no preview available, file is not an image" width="256"/>
             <a class="filelink" href="{% url 'files:detail' file.id %}">{{ file.file.name }}</a>
@@ -27,9 +27,24 @@
             {% endfor %}
         </div>
     </div>
+
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page=1">&laquo; first</a>
+            <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+        {% endif %}
+
+        <span class="current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+        {% endif %}
+    </div>
 {% else %}
     <p class="nofile">No file uploaded yet.</p>
 {% endif %}
     <p><a target="_blank" href="https://github.com/zeropsio/recipe-django">Source Repository</a></p>
 {% endblock %}
-
