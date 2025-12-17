@@ -1,64 +1,108 @@
 zerops:
+  # Prepare `base` setup to reduce definition duplication.
   - setup: base
     run:
+      # The Django app is made configurable via environment variables,
+      # as this is the recommended way to deploy to Zerops.
+      # Environment variables are used in `settings.py` via `os.getenv("KEY")`.
       envVariables:
-        PYTHONDONTWRITEBYTECODE: 1
+        # Don't hold the logs in a buffer, write them immediately
+        # as they occur.
         PYTHONUNBUFFERED: 1
+        
+        # Change this in production environment,
+        # to match your own domain URL, e.g. `https://domain.example`.
+        # Accepts comma seperated URL list, which is used to configure
+        # `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` in `settings.py`. 
+        APP_DOMAIN_URLS: $zeropsSubdomain
 
-        APP_SUBDOMAIN_URL: $zeropsSubdomain
-
+        # Database connection setup.
         DB_HOST: $db_hostname
         DB_PORT: $db_port
         DB_USER: $db_user
         DB_PASSWORD: $db_password
 
+        # Use S3-compatible object storage as file and media storage.
         USE_S3: 1
         S3_ACCESS_KEY_ID: $storage_accessKeyId
         S3_SECRET_ACCESS_KEY: $storage_secretAccessKey
         S3_BUCKET_NAME: $storage_bucketName
         S3_ENDPOINT_URL: $storage_apiUrl
 
-        MAIL_HOST: mailpit
-        MAIL_PORT: 1025
+        # Send emails to the Mailpit by default,
+        # feel free to change or override this
+        # via the `_OVERRIDE` environment variables.
+        MAIL_HOST: ${MAIL_HOST_OVERRIDE:-mailpit}
+        MAIL_PORT: ${MAIL_PORT_OVERRIDE:-1025}
+      # Make the service available on port 8000
+      # from the outside of the container.
       ports:
         - port: 8000
           httpSupport: true
 
+  # Define `prod` setup that should be used
+  # for running app of stage and production deployments.
   - setup: prod
     extends: base
     build:
+      # Use lightweight Alpine Linux as base for app deployment. 
       os: alpine
       base: python@3.12
+      # Choosing to install the dependencies system-wide without
+      # Python virtual environment. That's why it's necessary to include
+      # the `requirements.txt` for the `prepareCommands` phase,
+      # where the runtime container image is created (runtime dependencies installation, ...).
+      # 
+      # Alternative solution would be to install
+      # all libraries and other dependencies to `.venv` directory
+      # and deploying the app with it. Similar to how other
+      # interpreted languages are deployed:
+      #   - PHP with Composer and `vendor`
+      #   - Node.js with `npm` and `node_modules`
       addToRunPrepare:
         - requirements.txt
       deployFiles:
         - files/
         - recipe/
+        # Include the `manage.py` for maintenance reasons. 
         - manage.py
         - gunicorn.conf.py
-    deploy: 
-      readinessCheck: 
-        httpGet: 
+    deploy:
+      # Check that our app is able to start during deployment
+      # of a new version. This can prevent bad releases from
+      # rolling out into production.
+      readinessCheck:
+        httpGet:
           port: 8000
           path: /health
     run:
       os: alpine
       base: python@3.12
+      # Install required `tzdata` system package and all
+      # Python packages system-wide.
       prepareCommands:
         - sudo apk add --no-cache tzdata
         - pip install --no-cache-dir -r requirements.txt
       initCommands:
-        # Exec everytime we build a new app version.
+        # Migrate the database and collect static files, every time new code is released.
+        # Execute these command exactly once across all containers during upgrade,
+        # more about the `zsc` utility: https://docs.zerops.io/references/zsc#execonce
+        # 
+        # Utilize the `$ZEROPS_appVersionId` environment variable,
+        # which is different for every new app version (release of the app code).
         - zsc execOnce migrate-${ZEROPS_appVersionId} -- python manage.py migrate
         - zsc execOnce collectstatic-${ZEROPS_appVersionId} -- python manage.py collectstatic --no-input --verbosity 3
-        # Exec just once.
+        # Create superuser for admin page.
+        # Using static exec name `createsuperuser` causing this command
+        # to be executed exactly once of the service existence.
         - zsc execOnce createsuperuser -- python manage.py createsuperuser --no-input --username admin --email admin@example.com || true
+      # Serve the app via Gunicorn Python HTTP server: https://gunicorn.org/
       start: gunicorn recipe.wsgi
-      healthCheck:
-        httpGet: 
-          port: 8000
-          path: /health
 
+  # Define `dev` setup for remote development
+  # or agentic development setups.
+  # Contains source code, pre-installed packages and environment variables
+  # making it ready to develop inside the runtime container.
   - setup: dev
     extends: base
     build:
@@ -66,11 +110,21 @@ zerops:
       base: python@3.12
       addToRunPrepare:
         - requirements.txt
+      # Deploy all source code files.
       deployFiles:
         - ./
     run:
+      # Specify Ubuntu as runtime OS for its richer tool-set.
       os: ubuntu
       base: python@3.12
+      # Turn on Django debug.
+      envVariables:
+        DEBUG: 1
+      # Pre-install system and Python packages
+      # (again system-wide, see note in `prod` setup section).
       prepareCommands:
         - sudo apt-get install tzdata
-        - pip install --no-cache-dir -r requirements.txt
+        - pip install -r requirements.txt
+      # The port 8000 is inherited from `base` setup,
+      # making it possible to access from outside during dev-testing cycle.
+      

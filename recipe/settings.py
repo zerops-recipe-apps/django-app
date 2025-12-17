@@ -11,9 +11,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 import os
-from pathlib import Path
-
 from dotenv import load_dotenv
+from pathlib import Path
 
 load_dotenv()
 
@@ -39,13 +38,14 @@ ALLOWED_HOSTS = [
 
 CSRF_TRUSTED_ORIGINS = []
 
-if os.getenv("APP_DOMAIN") is not None:
-    CSRF_TRUSTED_ORIGINS += [os.getenv("APP_DOMAIN")]
-
-zerops_subdomain_url = os.getenv("APP_SUBDOMAIN_URL")
-if zerops_subdomain_url is not None:
-    ALLOWED_HOSTS += [zerops_subdomain_url.removeprefix("https://")]
-    CSRF_TRUSTED_ORIGINS += [zerops_subdomain_url]
+# Support comma-separated list of domain URLs
+app_domain_urls = os.getenv("APP_DOMAIN_URLS")
+if app_domain_urls:
+    for url in app_domain_urls.split(","):
+        url = url.strip()
+        if url:
+            CSRF_TRUSTED_ORIGINS += [url]
+            ALLOWED_HOSTS += [url.removeprefix("https://").removeprefix("http://")]
 
 
 # Application definition
