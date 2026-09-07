@@ -125,6 +125,5 @@ zerops:
       prepareCommands:
         - sudo apt-get install tzdata
         - pip install -r requirements.txt
-      # The port 8000 is inherited from `base` setup,
-      # making it possible to access from outside during dev-testing cycle.
+      start: zsc noop --silent
       
