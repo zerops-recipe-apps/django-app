@@ -9,6 +9,7 @@ zerops:
         # Project vault (import.yaml) — map store keys explicitly.
         SECRET_KEY: ${APP_SECRET}
         DJANGO_SUPERUSER_PASSWORD: ${ADMIN_PASSWORD}
+        ZEROPS_ALLOW_ALL_HOSTS: 1
         # Don't hold the logs in a buffer, write them immediately
         # as they occur.
         PYTHONUNBUFFERED: 1
@@ -38,6 +39,7 @@ zerops:
         # via the `_OVERRIDE` environment variables.
         MAIL_HOST: ${MAIL_HOST_OVERRIDE:-mailpit}
         MAIL_PORT: ${MAIL_PORT_OVERRIDE:-1025}
+        EMAIL_BACKEND: ${EMAIL_BACKEND_OVERRIDE:-django.core.mail.backends.console.EmailBackend}
       # Make the service available on port 8000
       # from the outside of the container.
       ports:

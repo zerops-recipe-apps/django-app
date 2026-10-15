@@ -35,6 +35,9 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "0.0.0.0",
 ]
+# Zerops readiness/health probes may not match parsed APP_DOMAIN_URLS; allow opt-in.
+if os.getenv("ZEROPS_ALLOW_ALL_HOSTS", "0") == "1":
+    ALLOWED_HOSTS = ["*"]
 
 CSRF_TRUSTED_ORIGINS = []
 
