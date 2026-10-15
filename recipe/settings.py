@@ -42,10 +42,10 @@ CSRF_TRUSTED_ORIGINS = []
 app_domain_urls = os.getenv("APP_DOMAIN_URLS")
 if app_domain_urls:
     for url in app_domain_urls.split(","):
-        url = url.strip()
+        url = url.strip().strip('"').strip("'")
         if url:
             CSRF_TRUSTED_ORIGINS += [url]
-            ALLOWED_HOSTS += [url.removeprefix("https://").removeprefix("http://")]
+            ALLOWED_HOSTS += [url.removeprefix("https://").removeprefix("http://").strip("/")]
 
 
 # Application definition
