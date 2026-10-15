@@ -24,6 +24,7 @@ zerops:
         DB_PORT: $db_port
         DB_USER: $db_user
         DB_PASSWORD: $db_password
+        DB_NAME: ${db_dbName}
 
         # Use S3-compatible object storage as file and media storage.
         USE_S3: 1
