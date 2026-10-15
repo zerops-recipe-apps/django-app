@@ -9,7 +9,7 @@ zerops:
         # Project vault (import.yaml) — map store keys explicitly.
         SECRET_KEY: ${APP_SECRET}
         DJANGO_SUPERUSER_PASSWORD: ${ADMIN_PASSWORD}
-        ZEROPS_ALLOW_ALL_HOSTS: 1
+        DJANGO_ALLOW_ALL_HOSTS: 1
         # Don't hold the logs in a buffer, write them immediately
         # as they occur.
         PYTHONUNBUFFERED: 1
