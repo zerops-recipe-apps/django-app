@@ -17,7 +17,7 @@ zerops:
         # to match your own domain URL, e.g. `https://domain.example`.
         # Accepts comma seperated URL list, which is used to configure
         # `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` in `settings.py`. 
-        APP_DOMAIN_URLS: $zeropsSubdomain
+        APP_DOMAIN_URLS: ${zeropsSubdomain}
 
         # Database connection setup.
         DB_HOST: $db_hostname
