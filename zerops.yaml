@@ -6,6 +6,9 @@ zerops:
       # as this is the recommended way to deploy to Zerops.
       # Environment variables are used in `settings.py` via `os.getenv("KEY")`.
       envVariables:
+        # Project vault (import.yaml) — map store keys explicitly.
+        SECRET_KEY: ${APP_SECRET}
+        DJANGO_SUPERUSER_PASSWORD: ${ADMIN_PASSWORD}
         # Don't hold the logs in a buffer, write them immediately
         # as they occur.
         PYTHONUNBUFFERED: 1
