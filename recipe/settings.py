@@ -141,19 +141,29 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 if os.getenv("USE_S3", "0") == "1":
-    AWS_ACCESS_KEY_ID = os.getenv("S3_ACCESS_KEY_ID")
-    AWS_SECRET_ACCESS_KEY = os.getenv("S3_SECRET_ACCESS_KEY")
-    AWS_STORAGE_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
-    AWS_S3_ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL")
-    AWS_S3_ADDRESSING_STYLE = "path"
-    AWS_S3_SIGNATURE_NAME = "s3v4"
-    AWS_S3_FILE_OVERWRITE = True
-
-    STATIC_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/static/"
-    STATICFILES_STORAGE = "storages.backends.s3.S3Storage"
-
-    MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/media/"
-    DEFAULT_FILE_STORAGE = "storages.backends.s3.S3Storage"
+    _s3_endpoint = os.getenv("S3_ENDPOINT_URL", "").rstrip("/")
+    _s3_bucket = os.getenv("S3_BUCKET_NAME", "")
+    _s3_options = {
+        "access_key": os.getenv("S3_ACCESS_KEY_ID"),
+        "secret_key": os.getenv("S3_SECRET_ACCESS_KEY"),
+        "bucket_name": _s3_bucket,
+        "endpoint_url": _s3_endpoint,
+        "addressing_style": "path",
+        "signature_version": "s3v4",
+        "file_overwrite": True,
+    }
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {**_s3_options, "location": "media"},
+        },
+        "staticfiles": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {**_s3_options, "location": "static"},
+        },
+    }
+    STATIC_URL = f"{_s3_endpoint}/{_s3_bucket}/static/"
+    MEDIA_URL = f"{_s3_endpoint}/{_s3_bucket}/media/"
 else:
     STATIC_URL = "/static/"
     MEDIA_URL = "/media/"
