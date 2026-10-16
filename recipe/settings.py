@@ -65,6 +65,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -140,6 +141,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
+STATIC_ROOT = os.path.join(BASE_DIR, "assets/staticfiles/")
+STATIC_URL = "/static/"
+
 if os.getenv("USE_S3", "0") == "1":
     _s3_endpoint = os.getenv("S3_ENDPOINT_URL", "").rstrip("/")
     _s3_bucket = os.getenv("S3_BUCKET_NAME", "")
@@ -158,17 +162,20 @@ if os.getenv("USE_S3", "0") == "1":
             "OPTIONS": {**_s3_options, "location": "media"},
         },
         "staticfiles": {
-            "BACKEND": "storages.backends.s3.S3Storage",
-            "OPTIONS": {**_s3_options, "location": "static"},
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
         },
     }
-    STATIC_URL = f"{_s3_endpoint}/{_s3_bucket}/static/"
     MEDIA_URL = f"{_s3_endpoint}/{_s3_bucket}/media/"
-else:
-    STATIC_URL = "/static/"
-    MEDIA_URL = "/media/"
-    STATIC_ROOT = os.path.join(BASE_DIR, "assets/staticfiles/")
     MEDIA_ROOT = os.path.join(BASE_DIR, "assets/mediafiles/")
+else:
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = os.path.join(BASE_DIR, "assets/mediafiles/")
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
 
 
 # Default primary key field type
