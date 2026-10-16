@@ -51,62 +51,31 @@ zerops:
   - setup: prod
     extends: base
     build:
-      # Use lightweight Alpine Linux as base for app deployment. 
-      os: alpine
       base: python@3.12
-      # Choosing to install the dependencies system-wide without
-      # Python virtual environment. That's why it's necessary to include
-      # the `requirements.txt` for the `prepareCommands` phase,
-      # where the runtime container image is created (runtime dependencies installation, ...).
-      # 
-      # Alternative solution would be to install
-      # all libraries and other dependencies to `.venv` directory
-      # and deploying the app with it. Similar to how other
-      # interpreted languages are deployed:
-      #   - PHP with Composer and `vendor`
-      #   - Node.js with `npm` and `node_modules`
-      addToRunPrepare:
-        - requirements.txt
+      buildCommands:
+        - pip install --target=./vendor -r requirements.txt
       deployFiles:
         - files/
         - recipe/
-        # Include the `manage.py` for maintenance reasons. 
         - manage.py
         - gunicorn.conf.py
+        - vendor/
+      cache:
+        - vendor
     deploy:
-      # Check that our app is able to start during deployment
-      # of a new version. This can prevent bad releases from
-      # rolling out into production.
       readinessCheck:
         httpGet:
           port: 8000
           path: /health
     run:
-      os: alpine
       base: python@3.12
-      # Install required `tzdata` system package and all
-      # Python packages system-wide.
-      prepareCommands:
-        - sudo apk add --no-cache tzdata
-        - pip install --no-cache-dir -r requirements.txt
+      envVariables:
+        PYTHONPATH: /var/www/vendor
       initCommands:
-        # Migrate the database and collect static files, every time new code is released.
-        # Execute these command exactly once across all containers during upgrade,
-        # more about the `zsc` utility: https://docs.zerops.io/references/zsc#execonce
-        # 
-        # Run once per app version (${appVersionId} is set by Zerops per release).
-        - zsc execOnce migrate-${appVersionId} --retryUntilSuccessful -- python manage.py migrate
-        - zsc execOnce collectstatic-${appVersionId} -- python manage.py collectstatic --no-input --verbosity 3
-        # Create superuser for admin page.
-        # Using static exec name `createsuperuser` causing this command
-        # to be executed exactly once of the service existence.
+        - zsc execOnce ${appVersionId} --retryUntilSuccessful -- python manage.py migrate
+        - zsc execOnce collectstatic-${appVersionId} -- python manage.py collectstatic --no-input
         - zsc execOnce createsuperuser -- python manage.py createsuperuser --no-input --username admin --email admin@example.com || true
-      healthCheck:
-        httpGet:
-          port: 8000
-          path: /health
-      # Serve the app via Gunicorn Python HTTP server: https://gunicorn.org/
-      start: gunicorn recipe.wsgi
+      start: /var/www/vendor/bin/gunicorn -c gunicorn.conf.py recipe.wsgi:application
 
   # Define `dev` setup for remote development
   # or agentic development setups.
