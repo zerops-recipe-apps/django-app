@@ -94,14 +94,17 @@ zerops:
         # Execute these command exactly once across all containers during upgrade,
         # more about the `zsc` utility: https://docs.zerops.io/references/zsc#execonce
         # 
-        # Utilize the `$ZEROPS_appVersionId` environment variable,
-        # which is different for every new app version (release of the app code).
-        - zsc execOnce migrate-${ZEROPS_appVersionId} -- python manage.py migrate
-        - zsc execOnce collectstatic-${ZEROPS_appVersionId} -- python manage.py collectstatic --no-input --verbosity 3
+        # Run once per app version (${appVersionId} is set by Zerops per release).
+        - zsc execOnce migrate-${appVersionId} --retryUntilSuccessful -- python manage.py migrate
+        - zsc execOnce collectstatic-${appVersionId} -- python manage.py collectstatic --no-input --verbosity 3
         # Create superuser for admin page.
         # Using static exec name `createsuperuser` causing this command
         # to be executed exactly once of the service existence.
         - zsc execOnce createsuperuser -- python manage.py createsuperuser --no-input --username admin --email admin@example.com || true
+      healthCheck:
+        httpGet:
+          port: 8000
+          path: /health
       # Serve the app via Gunicorn Python HTTP server: https://gunicorn.org/
       start: gunicorn recipe.wsgi
 
